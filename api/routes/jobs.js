@@ -5,6 +5,8 @@ router.use(express.static('./public'))
 const bodyParser = require('body-parser');
 router.use(bodyParser.urlencoded({extended: false}))
 const passport = require("passport")
+const config = require("../../config/config.json")
+const axios = require('axios')
 require("../../middleware/passport")(passport);
 
 
@@ -18,20 +20,18 @@ const pool = mysql.createPool({
 function getConnection(){
     return pool
 }
-
-
-//passport.authenticate("jwt", { session: false })
 router.use(bodyParser.urlencoded({
     extended: true
 }));
 router.use(bodyParser.json());
 
-router.post('/create_job',passport.authenticate("jwt", { session: false }),(req,res)=>{
+router.post('/create_job',passport.authenticate("jwt", { session: false }),async (req,res)=>{
     try{
     const user = req.user;
     const {job_name,job_description,location_lat,location_lng} = req.body;
-    const queryString = "INSERT INTO `jobs`(`job_name`, `job_description`, `owner_user_id`,`location_lat`,`location_lng`,`date_creation`) VALUES (?,?,?,?,?,?)";
-    getConnection().query(queryString,[job_name,job_description,user.user_id,location_lat,location_lng,new Date().toISOString()],(err,results,fields)=>{
+    const reverse_geocode = await axios.get(`https://api.openrouteservice.org/geocode/reverse?api_key=${config.openrouteservice_key}&point.lon=${location_lng}&point.lat=${location_lat}`);
+    const queryString = "INSERT INTO `jobs`(`job_name`, `job_description`, `owner_user_id`,`location_lat`,`location_lng`,`date_creation`,`adress`) VALUES (?,?,?,?,?,?,?)";
+    getConnection().query(queryString,[job_name,job_description,user.user_id,location_lat,location_lng,new Date().toISOString(),reverse_geocode.data.features[0].properties.label],(err,results,fields)=>{
         if(err){
             console.log("[ERROR]"+err)
             res.sendStatus(500)
@@ -47,6 +47,7 @@ router.post('/create_job',passport.authenticate("jwt", { session: false }),(req,
 
     });
 }catch(err){
+    console.log(err)
     return res.status(500).json({
         success:false,
         message:"API.INTERNAL-SERVER-ERROR",

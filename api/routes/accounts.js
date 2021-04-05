@@ -10,10 +10,15 @@ const generateToken = require("../../functions/generateTokens")
 const accountSid = config.TWILLIO_ACCOUNTSID;
 const authToken = config.TWILLIO_AUTHTOKEN;
 const client = require('twilio')(accountSid, authToken);
+const mime = require("mime");
+const passport = require("passport");
+const fs = require("fs");
+require("../../middleware/passport")(passport);
+
 
 const storage = multer.diskStorage({ 
     destination: function(req, file, cb){
-        cb(null,'./uploads/');
+        cb(null,'./upload');
     },
     filename: function(req, file, cb) {
         cb(null,  Date.now() + "-" + file.originalname);
@@ -62,6 +67,47 @@ router.use(bodyParser.urlencoded({
     extended: true
 }));
 router.use(bodyParser.json());
+
+function uploadFiles(req)  {
+	if (!req.files) {
+		return ("file not exists")
+	} else {
+		if(req.files.length == 1)
+		req.body.file_names = [req.body.file_names]
+			req.files.forEach(async (element) => {
+                console.log(element)
+                const new_file_name =
+                element.originalname ;
+                const file_uri = "upload/"+ new_file_name+"."+mime.getExtension(element.mimetype);
+                fs.rename(
+                    element.path,
+                    file_uri,
+                    function(err) {
+                            if (err) throw err;
+                    }
+            )
+            let queryString = "update  users set image_url = ? WHERE user_id = ?";
+            getConnection().query(queryString,[new_file_name+"."+mime.getExtension(element.mimetype),req.user.user_id],(err,results,fields)=>{});
+					})
+			return ("upload done")
+	}
+};
+
+router.post("/upload_profile_picture",passport.authenticate("jwt",{session:false}), upload.array("file",12), (req, res) => {
+    const result = uploadFiles(req);
+    if(result == "upload done"){
+        return res.status(200).json({
+            success:true,
+            message:"API.IMAGE-UPDATED",
+            data:null
+        })
+    }
+    return res.status(400).json({
+        success:false,
+        message:"API.INVALIDE-IMAGE",
+        data:null
+    })
+});
 
 router.post('/register',(req,res) => {
     try{
@@ -175,6 +221,21 @@ router.post('/login',(req,res) => {
     })
 })
 
+router.get('/fetch_profile',passport.authenticate("jwt", { session: false }),(req,res)=>{
+    const {user_id} = req.query;
+    const  queryString = "SELECT * FROM users WHERE user_id = ? "
+    getConnection().query(queryString,[user_id],(err,rows,fields)=>{
+        if(err){
+            console.log("[ERROR]"+err)
+            res.sendStatus(500)
+            res.send("fail")
+            return
+        }
+                console.log("Successfully fetched.")
+        delete rows[0].password;
+        return res.json({success:true,message:"API.USER-FETCHED",data:rows[0]})
+    })
+})
 
 router.delete('/delete/:id',(req,res)=>{
     const ID = req.params.ID
@@ -196,7 +257,7 @@ router.post('/uploadimage/:ID',upload.single('UserAccount'),(req,res)=>{
     const imageName =  Date.now() + "-" + req.file.originalname;
     console.log(imageName);
     const ID = req.params.ID;
-     const queryString = "UPDATE `accounts` SET ProfilPicture=? WHERE ID=?"
+     /*const queryString = "UPDATE `accounts` SET ProfilPicture=? WHERE ID=?"
      getConnection().query(queryString,[imageName,ID],(err,rows,fields)=>{
          if(err){
              console.log("[ERROR]",err)
@@ -206,7 +267,7 @@ router.post('/uploadimage/:ID',upload.single('UserAccount'),(req,res)=>{
          console.log("Successfully updated.")
          res.end()
  
-     })
+     })*/
  })
  
 
