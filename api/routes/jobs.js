@@ -25,6 +25,33 @@ router.use(bodyParser.urlencoded({
 }));
 router.use(bodyParser.json());
 
+router.get('/fetch_job_messages',passport.authenticate("jwt", { session: false }),async (req,res)=>{
+    try{
+        const {job_id} = req.query;
+        const queryString = "select * from message_logs where job_id = ?";
+        getConnection().query(queryString,[job_id],(err,rows,fields)=>{
+            if(err){
+                console.log("[ERROR]"+err)
+                res.sendStatus(500)
+                res.send("fail")
+                return
+            }
+            return res.status(200).json({
+                success:true,
+                message:"API.MESSAGES-FETCHED",
+                data:rows
+            })
+        })
+
+    }catch(err){
+        res.status(500).json({
+            success:false,
+            message:"API.INTERNAL-SERVER-ERROR",
+            data:null
+        })
+    }
+})
+
 router.post('/create_job',passport.authenticate("jwt", { session: false }),async (req,res)=>{
     try{
     const user = req.user;
