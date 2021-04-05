@@ -19,7 +19,7 @@ class AppSocket {
     }
 }
 const appsocketinst = new AppSocket();
-appsocketinst.emit("messagedetection",{from_user_id:1,from_user_name:"test",to_user_id:2,to_user_name:"test2",job_id:5});
+appsocketinst.emit("messagedetection",{from_user_id:1,from_user_name:"test",to_user_id:2,to_user_name:"test2",job_id:5,message_content:"abcd"});
 appsocketinst.listen("message",(data)=>{
  console.log(data)
 })
