@@ -4,21 +4,11 @@ const morgan = require('morgan');
 const bodyParser = require('body-parser');
 const cors = require('cors')
 
-const projectsRoutes = require('./api/routes/projects');
 const accountsRoutes = require('./api/routes/accounts');
 const applicationsRoutes = require('./api/routes/jobs');
-const favoritesRoutes = require('./api/routes/favorites');
-const commentairesRoutes = require('./api/routes/commentaires');
-const publicationsRoutes = require('./api/routes/publications');
-const messagesRoutes = require('./api/routes/messages');
 
-app.use('/projects',projectsRoutes);
 app.use('/accounts',accountsRoutes);
 app.use('/jobs',applicationsRoutes);
-app.use('/favorites', favoritesRoutes)
-app.use('/commentaires', commentairesRoutes)
-app.use('/publications', publicationsRoutes)
-app.use('/messages', messagesRoutes)
 
 app.use(bodyParser.urlencoded({
  extended: true

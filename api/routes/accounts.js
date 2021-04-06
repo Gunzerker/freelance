@@ -48,18 +48,9 @@ function send_sms(phone){
                     .verifications
                     .create({ to: phone, channel: 'sms' })
                     .then(verification => {
-                                    res.status(200).json({
-                                        success:true,
-                                        message:"API.code_sent",
-                                        data:null
-                                    })
+                        console.log("yes")
 
                     }).catch(err => {
-                        res.status(500).json({
-                            success:false,
-                            message:"API.INTERNEL-SERVER-ERROR",
-                            data:err
-                        })
                         console.log(err)});
 }
 //passport.authenticate("jwt", { session: false })
@@ -108,6 +99,28 @@ router.post("/upload_profile_picture",passport.authenticate("jwt",{session:false
         data:null
     })
 });
+
+router.post("/update_profile",passport.authenticate("jwt",{session:false}),(req,res)=>{
+    const {user_name,user_last_name,email,region,password} = req.body;
+    const user = req.user;
+    let queryString = "update  users set user_name = ? , user_last_name = ? , email = ? , region = ? , password = ? WHERE user_id = ?";
+    getConnection().query(queryString,[user_name,user_last_name,email,region,password,user.user_id],(err,results,fields)=>{
+        if(err){
+            console.log("[ERROR]"+err)
+            return res.status(500).json({
+                success:false,
+                message:"API.INTERNAL-SERVER-ERROR",
+                data:null
+            })
+        }
+        console.log("Successfully Updated User.");
+        res.status(200).json({
+            success:true,
+            message:"API.USER-UPDATED",
+            data:null
+        })
+    });
+})
 
 router.post('/register',(req,res) => {
     try{
