@@ -85,7 +85,7 @@ router.post('/create_job',passport.authenticate("jwt", { session: false }),async
 
 router.get('/fetch_jobs',passport.authenticate("jwt", { session: false }),(req,res)=>{
 
-    const  queryString = "SELECT  * FROM jobs order by job_id";
+    const  queryString = "SELECT  j.* , u.user_name,u.user_last_name FROM jobs j join users u on j.owner_user_id = u.user_id order by job_id";
     getConnection().query(queryString,[],(err,rows,fields)=>{
         if(err){
             console.log("[ERROR]"+err)
