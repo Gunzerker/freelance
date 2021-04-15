@@ -1,7 +1,11 @@
-const express = require('express'),
-http = require('http').Server(express),
-io = require('socket.io')(http);
+let app = require('express')();
+​
+let http = require('http').Server(app);
+​
+let io = require('socket.io')(http);
+​
 const mysql = require('mysql');
+​
 const pool = mysql.createPool({
     connectionLimit: 10 ,
     host: '127.0.0.1',
@@ -9,6 +13,8 @@ const pool = mysql.createPool({
     password: 'root',
     database: 'weHelp'
 })
+​
+​
 function getConnection(){
     return pool
 }
@@ -19,19 +25,56 @@ function saveMessage(data){
         console.log(err)
     });
 }
-io.on('connection', (socket) => {
-
-console.log('user connected')
-
-socket.on('messagedetection', (data) => {
+​
+app.get('/', (req, res) => {
+    res.sendFile(__dirname + '/index.html');
+})
+​
+io.on('connect', (socket) => {
+    io.emit('noOfConnections', Object.keys(io.sockets.connected).length)
+    console.log("user connected")
+​
+    socket.on('disconnect', () => {
+        console.log('disconnected')
+        io.emit('noOfConnections', Object.keys(io.sockets.connected).length)
+    })
+​
+    socket.on('messagedetection', (data) => {
         saveMessage(data);
         io.emit('message', data )
     })
-    socket.on('disconnect', function() {
+​
+​
+​
+    socket.on('new message', (msg) => {
+        console.log(msg)
+        socket.broadcast.emit('new message', msg)
     })
+    socket.on('new transaction', (msg) => {
+        console.log(msg)
+        socket.broadcast.emit('new transaction', msg)
+    })
+    socket.on('joined', (name) => {
+        console.log('joined '.name)
+        socket.broadcast.emit('joined', name)
+    })
+    socket.on('leaved', (name) => {
+        console.log('leaved '.name)
+        socket.broadcast.emit('leaved', name)
+    })
+​
+    socket.on('typing', (data) => {
+        console.log('typing '.data)
+        socket.broadcast.emit('typing', data)
+    })
+    socket.on('stoptyping', () => {
+        console.log('stoptyping '.data)
+        socket.broadcast.emit('stoptyping')
+    })
+​
+​
 })
-
+​
 http.listen(8000, () => {
-    console.log('Server is started at port 8000')
+    console.log('Server is started at http://localhost:8000')
 })
-
