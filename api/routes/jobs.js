@@ -13,8 +13,8 @@ require("../../middleware/passport")(passport);
 const pool = mysql.createPool({
     connectionLimit: 10 ,
     host: '127.0.0.1',
-    user: 'digit',
-    password: 'root',
+    user: 'root',
+    password: '',
     database: 'weHelp'
 })
 function getConnection(){
@@ -57,7 +57,6 @@ router.post('/create_job',passport.authenticate("jwt", { session: false }),async
     const user = req.user;
     const {job_name,job_description,location_lat,location_lng} = req.body;
     const reverse_geocode = await axios.get(`https://api.openrouteservice.org/geocode/reverse?api_key=${config.openrouteservice_key}&point.lon=${location_lng}&point.lat=${location_lat}`);
-    console.log(reverse_geocode.data.features[0].properties)
     const queryString = "INSERT INTO `jobs`(`job_name`, `job_description`, `owner_user_id`,`location_lat`,`location_lng`,`date_creation`,`adress`) VALUES (?,?,?,?,?,?,?)";
     //return res.send(reverse_geocode.data.features[0].properties)
     getConnection().query(queryString,[job_name,job_description,user.user_id,location_lat,location_lng,new Date().toISOString(),reverse_geocode.data.features[0].properties.label],(err,results,fields)=>{
@@ -152,7 +151,7 @@ router.get('/fetch_my_jobs',passport.authenticate("jwt", { session: false }),(re
 })
 
 router.get('/fetch_my_applications',passport.authenticate("jwt", { session: false }),(req,res)=>{
-    const  queryString = "SELECT  * , (select user_name from users where user_id = j.owner_user_id) as owner_name FROM job_signs js join jobs j on js.job_id = j.job_id where owner_user_id = ?";
+    const  queryString = "SELECT  * , (select user_name from users where user_id = j.owner_user_id) as owner_name , (select user_last_name from users where user_id = j.owner_user_id) as owner_last_name FROM job_signs js join jobs j on js.job_id = j.job_id where owner_user_id = ?";
     getConnection().query(queryString,[req.user.user_id],(err,rows,fields)=>{
         if(err){
             console.log("[ERROR]"+err)
@@ -191,159 +190,30 @@ router.post('/accept_application',passport.authenticate("jwt", { session: false 
 }
 })
 
-
-router.post('/new', (req, res) => {
-    const AccountID = req.body.AccountID
-    const ProjectID = req.body.ProjectID
-    const queryString = "INSERT INTO `applications`(`AccountID`, `ProjectID`, `Status`) VALUES (?,?,1)"
-    getConnection().query(queryString,[AccountID, ProjectID],(err,results,fields)=>{
+router.get('/fetch_job_application',passport.authenticate("jwt", { session: false }),async (req,res)=>{
+    try{
+    const {job_id} = req.body;
+    const  queryString = "SELECT  js.* ,u.user_name,u.user_last_name ,(select AVG (rate) from job_signs where user_id = u.user_id and accepted = 1) as rating FROM job_signs js join users u on js.user_id = u.user_id where job_id = ?";
+    getConnection().query(queryString,[job_id],(err,rows,fields)=>{
         if(err){
             console.log("[ERROR]"+err)
             res.sendStatus(500)
-            res.send("Erreur")
+            res.send("fail")
             return
         }
-        console.log("Successfully applied");
-        res.end()
-
-    });
-});
-
-
-router.delete('/delete/:ID', (req, res) => {
-    const ProjectID = req.params.ID
-    const queryString = "DELETE FROM applications WHERE ApplicationID=?"
-    getConnection().query(queryString,[ProjectID],(err,results,fields)=>{
-        if(err){
-            console.log("[ERROR]"+err)
-            res.sendStatus(500)
-            res.send("Erreur")
-            return
-        }
-        console.log("Successfully withdrawed application");
-        res.end()
-
-    });
-   
-});
-
-
-
-
-router.get('/accept/:ApplicationID', (req, res) => {
-    const ApplicationID = req.params.ApplicationID
-    const queryString = "UPDATE `applications` SET `status`=2 WHERE `ApplicationID`=?"
-    getConnection().query(queryString,[ApplicationID],(err,results,fields)=>{
-        if(err){
-            console.log("[ERROR]"+err)
-            res.sendStatus(500)
-            res.send("Erreur")
-            return
-        }
-        console.log("Successfully accepted application");
-        res.end()
-
-    });
-   
-});
-
-
-router.get('/reject/:ApplicationID', (req, res) => {
-    const ApplicationID = req.params.ApplicationID
-    const queryString = "UPDATE `applications` SET `status`=0 WHERE `ApplicationID`=?"
-    getConnection().query(queryString,[ApplicationID],(err,results,fields)=>{
-        if(err){
-            console.log("[ERROR]"+err)
-            res.sendStatus(500)
-            res.send("Erreur")
-            return
-        }
-        console.log("Successfully rejected application");
-        res.end()
-
-    });
-   
-});
-
-
-router.get('/checkIfExists/:accountID/:projectID',(req,res)=>{
-    const ID = req.params.accountID
-    const PID = req.params.projectID
-    const  queryString = "SELECT  * FROM Applications Where AccountID=? AND ProjectID=?"
-    getConnection().query(queryString,[ID,PID],(err,rows,fields)=>{
-        if(err){
-           console.log("[ERROR]"+err)
-            res.sendStatus(500)
-            res.send("fail")    
-            return
-        }
-        if(rows[0]!= null)
-        {
-            res.json({"Status": true, "AccountID": 2})
-            console.log(rows[0].status)
-        }
-        else
-        {
-            res.json({"Status": false, "AccountID":0})
-        }
-        //res.json(rows)
-                
-    })    
+        return res.status(200).json({
+            success:true,
+            message:"API.JOB-APPLICATION-FETCHED",
+            data:rows
+        })
+    })
+}catch(err){
+    res.status(500).json({
+        success:true,
+        message:'API.INTERNAL-SERVER-ERROR',
+        data:null
+    })
+}
 })
-
-
-router.get('/search/:accountID',(req,res)=>{
-    const ID = req.params.accountID
-    const  queryString = "SELECT  * FROM accounts b,applications a, projects p WHERE b.ID = a.accountid and p.projectid=a.projectid and a.accountid =? "
-    getConnection().query(queryString,[ID],(err,rows,fields)=>{
-        if(err){
-           console.log("[ERROR]"+err)
-            res.sendStatus(500)
-            res.send("fail")    
-            return
-        }
-        res.json(rows)
-                
-    })    
-})
-
-
-
-
-
-
-router.get('/getcount/:projectID',(req,res)=>{
-    const ID = req.params.projectID
-    const  queryString = "SELECT  COUNT(*) FROM applications where projectid=? "
-    getConnection().query(queryString,[ID],(err,rows,fields)=>{
-        if(err){
-           console.log("[ERROR]"+err)
-            res.sendStatus(500)
-            res.send("fail")    
-            return
-        }
-        res.send(rows[0])
-        console.log(rows[0])
-                
-    })    
-})
-
-
-
-router.get('/getapplicants/:projectID',(req,res)=>{
-    const ID = req.params.projectID
-    const  queryString = "SELECT  * FROM applications a, accounts ac where a.accountID = ac.ID and a.status=1 and a.projectid=? "
-    getConnection().query(queryString,[ID],(err,rows,fields)=>{
-        if(err){
-           console.log("[ERROR]"+err)
-            res.sendStatus(500)
-            res.send("fail")    
-            return
-        }
-        res.json(rows)
-        console.log("kharajet les applicants")       
-    })    
-})
-
 
 module.exports = router;

@@ -34,8 +34,8 @@ limits:{
 const pool = mysql.createPool({
     connectionLimit: 10 ,
     host: '127.0.0.1',
-    user: 'digit',
-    password: 'root',
+    user: 'root',
+    password: '',
     database: 'weHelp'
 })
 function getConnection(){
@@ -250,38 +250,21 @@ router.get('/fetch_profile',passport.authenticate("jwt", { session: false }),(re
     })
 })
 
-router.delete('/delete/:id',(req,res)=>{
-    const ID = req.params.ID
-    const queryString = "DELETE FROM  accounts WHERE ID = ?"
-    getConnection().query(queryString,[ID],(err,rows,fields)=>{
+router.post('/rate',passport.authenticate("jwt", { session: false }),(req,res)=>{
+    const {rate,user_id,job_id} = req.body;
+    const  queryString = "update job_signs set rate = ? WHERE user_id = ? and job_id = ?";
+    getConnection().query(queryString,[rate,user_id,job_id],(err,rows,fields)=>{
         if(err){
+            console.log("[ERROR]"+err)
             res.sendStatus(500)
+            res.send("fail")
             return
         }
-        console.log("Successfully deleted.")
-        res.end()
-    }) 
- })
- 
+                console.log("Successfully updated")
+        return res.json({success:true,message:"API.USER-RATED",data:null})
+    })
 
-  
-router.post('/uploadimage/:ID',upload.single('UserAccount'),(req,res)=>{
-
-    const imageName =  Date.now() + "-" + req.file.originalname;
-    console.log(imageName);
-    const ID = req.params.ID;
-     /*const queryString = "UPDATE `accounts` SET ProfilPicture=? WHERE ID=?"
-     getConnection().query(queryString,[imageName,ID],(err,rows,fields)=>{
-         if(err){
-             console.log("[ERROR]",err)
-             res.sendStatus(500)
-             return
-         }
-         console.log("Successfully updated.")
-         res.end()
- 
-     })*/
- })
+})
  
 
 module.exports = router;
