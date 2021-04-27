@@ -190,7 +190,7 @@ router.post('/accept_application',passport.authenticate("jwt", { session: false 
 }
 })
 
-router.get('/fetch_job_application',passport.authenticate("jwt", { session: false }),async (req,res)=>{
+router.post('/fetch_job_application',passport.authenticate("jwt", { session: false }),async (req,res)=>{
     try{
     const {job_id} = req.body;
     const  queryString = "SELECT  js.* ,u.user_name,u.user_last_name ,(select AVG (rate) from job_signs where user_id = u.user_id and accepted = 1) as rating FROM job_signs js join users u on js.user_id = u.user_id where job_id = ?";
