@@ -216,4 +216,29 @@ router.post('/fetch_job_application',passport.authenticate("jwt", { session: fal
 }
 })
 
+router.get('/fetch_my_message',passport.authenticate("jwt", { session: false }),async (req,res)=>{
+    try{
+    const  queryString = "SELECT  ml.* ,u.image_url as to_user_image, (select image_url from users where user_id = from_user_id) as from_user_image  FROM message_logs ml join users u on (ml.to_user_id = u.user_id) where (from_user_id = ? OR to_user_id = ?)";
+    getConnection().query(queryString,[req.user.user_id,req.user.user_id],(err,rows,fields)=>{
+        if(err){
+            console.log("[ERROR]"+err)
+            res.sendStatus(500)
+            res.send("fail")
+            return
+        }
+        return res.status(200).json({
+            success:true,
+            message:"API.MESSAGE-LOGS-FETCHED",
+            data:rows
+        })
+    })
+}catch(err){
+    res.status(500).json({
+        success:true,
+        message:'API.INTERNAL-SERVER-ERROR',
+        data:null
+    })
+}
+})
+
 module.exports = router;
