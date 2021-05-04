@@ -134,7 +134,7 @@ router.post('/apply_job',passport.authenticate("jwt", { session: false }),(req,r
 })
 
 router.get('/fetch_my_jobs',passport.authenticate("jwt", { session: false }),(req,res)=>{
-    const  queryString = "SELECT  * FROM jobs where owner_user_id = ?";
+    const  queryString = "SELECT  j.* , (select count (*) from job_signs js where js.job_id = j.job_id) as application_count FROM jobs j where owner_user_id = ?";
     getConnection().query(queryString,[req.user.user_id],(err,rows,fields)=>{
         if(err){
             console.log("[ERROR]"+err)
