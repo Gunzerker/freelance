@@ -13,8 +13,8 @@ require("../../middleware/passport")(passport);
 const pool = mysql.createPool({
     connectionLimit: 10 ,
     host: '127.0.0.1',
-    user: 'root',
-    password: '',
+    user: 'digit',
+    password: 'root',
     database: 'weHelp'
 })
 function getConnection(){
@@ -218,7 +218,7 @@ router.post('/fetch_job_application',passport.authenticate("jwt", { session: fal
 
 router.get('/fetch_my_message',passport.authenticate("jwt", { session: false }),async (req,res)=>{
     try{
-    const  queryString = "SELECT  ml.* ,u.image_url as to_user_image, (select image_url from users where user_id = from_user_id) as from_user_image  FROM message_logs ml join users u on (ml.to_user_id = u.user_id) where (from_user_id = ? OR to_user_id = ?)";
+    const  queryString = "SELECT   distinct(ml.to_user_id) ,ml.to_user_name,u.image_url as to_user_image, (select image_url from users where user_id = from_user_id) as from_user_image  FROM message_logs ml join users u on (ml.to_user_id = u.user_id) where (from_user_id = ? OR to_user_id = ?)";
     getConnection().query(queryString,[req.user.user_id,req.user.user_id],(err,rows,fields)=>{
         if(err){
             console.log("[ERROR]"+err)
