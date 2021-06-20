@@ -1,0 +1,14 @@
+étape 0 : identification des données sources (nombre de questions, sub 0-1)
+
+
+
+1 er etape : calculer score des réponse = somme des scores des réponse (2, 0, 1)  => caution level
+2eme etape : pour calculer subd 0-max sc = arrondi(subd 0-1 * (nb question*2))
+pour calculer subd 0-1 = subd 0-1 + 0.02 until 1
+
+caution level = somme reponse dans final score
+seperation = somme reponse dans initial score
+ref risk = (subd 0-1)^2 * (nb question * 2) + 5
+
+final score = comparaison de (caution level et subd 0-max sc et next subd 0-max sc) w ya5odh l min ma3naha ya5odh ref risk mta3 subd 0-max sc
+initial score = comparaison de (seperation et subd 0-max sc et next subd 0-max sc) w ya5odh l min ma3naha ya5odh ref risk mta3 subd 0-max sc
