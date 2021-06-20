@@ -1,7 +1,11 @@
-const express = require('express'),
-http = require('http').Server(express),
-io = require('socket.io')(http);
+let app = require('express')();
+​
+let http = require('http').Server(app);
+​
+let io = require('socket.io')(http);
+​
 const mysql = require('mysql');
+​
 const pool = mysql.createPool({
     connectionLimit: 10 ,
     host: '127.0.0.1',
@@ -9,6 +13,8 @@ const pool = mysql.createPool({
     password: '',
     database: 'weHelp'
 })
+​
+​
 function getConnection(){
     return pool
 }
@@ -28,8 +34,36 @@ socket.on('messagedetection', (data) => {
         saveMessage(data);
         io.emit('message', data )
     })
-    socket.on('disconnect', function() {
+​
+​
+​
+    socket.on('new message', (msg) => {
+        console.log(msg)
+        socket.broadcast.emit('new message', msg)
     })
+    socket.on('new transaction', (msg) => {
+        console.log(msg)
+        socket.broadcast.emit('new transaction', msg)
+    })
+    socket.on('joined', (name) => {
+        console.log('joined '.name)
+        socket.broadcast.emit('joined', name)
+    })
+    socket.on('leaved', (name) => {
+        console.log('leaved '.name)
+        socket.broadcast.emit('leaved', name)
+    })
+​
+    socket.on('typing', (data) => {
+        console.log('typing '.data)
+        socket.broadcast.emit('typing', data)
+    })
+    socket.on('stoptyping', () => {
+        console.log('stoptyping '.data)
+        socket.broadcast.emit('stoptyping')
+    })
+​
+​
 })
 
 http.listen(3003, () => {

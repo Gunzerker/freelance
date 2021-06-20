@@ -257,5 +257,4 @@ router.get('/fetch_my_message',passport.authenticate("jwt", { session: false }),
 }
 })
 
-
 module.exports = router;
